@@ -6,9 +6,7 @@
 
 配置好之后，直接点击“启动服务器”就行。
 
-<img src="./screenshot1.jpg" style="zoom:50%;" />
-
-
+ <img src="./screenshot1.jpg" width = "300" height = "400" alt="截图" align=center />
 
 SFTP 实现来自 https://github.com/mad4j/rustedbytes-sftp
 
