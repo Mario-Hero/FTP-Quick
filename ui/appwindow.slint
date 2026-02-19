@@ -1,0 +1,143 @@
+import {
+    StandardButton,
+    LineEdit,
+    ComboBox,
+    GroupBox,
+    VerticalBox,
+    HorizontalBox,
+    Button,
+} from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    icon: @image-url("../assets/logo-256.png");
+    title: "FTP-Quick";
+    width: 400px;
+    height: 400px;
+
+    callback start-server(protocol: string, username: string, password: string, port: string, directory: string);
+    callback stop-server();
+    callback browse-directory();
+
+    in-out property <bool> server_running: false;
+    in-out property <string> directory: "";
+
+    VerticalBox {
+        padding: 8px;
+        spacing: 8px;
+
+        VerticalBox {
+            spacing: 8px;
+
+            HorizontalBox {
+                Text {
+                    text: "FTP类型:";
+                    vertical-alignment: center;
+                }
+
+                protocol-combobox := ComboBox {
+                    model: ["FTP", "SFTP", "TFTP"];
+                    current-index: 0;
+                    enabled: !server_running;
+                    selected => {
+                        root.set-default-port(self.current-value);
+                    }
+                }
+            }
+
+            HorizontalBox {
+                Text {
+                    text: "用户名:";
+                    vertical-alignment: center;
+                }
+
+                username-input := LineEdit {
+                    placeholder-text: "可选，TFTP 忽略";
+                    enabled: protocol-combobox.current-value != "TFTP" && !server_running;
+                }
+            }
+
+            HorizontalBox {
+                Text {
+                    text: "密码:";
+                    vertical-alignment: center;
+                }
+
+                password-input := LineEdit {
+                    placeholder-text: "可选，TFTP 忽略";
+                    input-type: password;
+                    enabled: protocol-combobox.current-value != "TFTP" && !server_running;
+                }
+            }
+
+            HorizontalBox {
+                Text {
+                    text: "端口:";
+                    vertical-alignment: center;
+                }
+
+                port-input := LineEdit {
+                    placeholder-text: "端口号";
+                    text: "21";
+                    enabled: protocol-combobox.current-value != "TFTP" && !server_running;
+                }
+            }
+
+            HorizontalBox {
+                Text {
+                    text: "目录:";
+                    vertical-alignment: center;
+                }
+
+                directory-input := LineEdit {
+                    text: root.directory;
+                    placeholder-text: "服务器根目录（必填）";
+                    enabled: !server_running;
+                }
+
+                browse-button := Button {
+                    text: "浏览...";
+                    enabled: !server_running;
+                    clicked => {
+                        root.browse-directory();
+                    }
+                }
+            }
+        }
+
+        HorizontalBox {
+            alignment: center;
+            spacing: 8px;
+            toggle-button := Button {
+                text: root.server_running ? "停止服务器" : "启动服务器";
+                enabled: true;
+                clicked => {
+                    if (root.server_running) {
+                        root.stop-server();
+                    } else {
+                        root.start-server(
+                            protocol-combobox.current-value,
+                            username-input.text,
+                            password-input.text,
+                            port-input.text,
+                            root.directory);
+                    }
+                }
+            }
+        }
+
+        Text {
+            text: root.server_running ? "服务器运行中..." : "服务器已停止";
+            horizontal-alignment: center;
+        }
+    }
+
+    public function set-default-port(protocol: string) {
+        if (protocol == "FTP") {
+            port-input.text = "21";
+        } else if (protocol == "SFTP") {
+            port-input.text = "22";
+        } else if (protocol == "TFTP") {
+            port-input.text = "69";
+        }
+    }
+}
