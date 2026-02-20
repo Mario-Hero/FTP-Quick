@@ -5,11 +5,25 @@ mod sftp;
 mod ssh;
 
 use slint::SharedString;
+use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::{Mutex, mpsc};
 use tokio::task::JoinHandle;
 
 slint::include_modules!();
+
+fn validate_path(path_str: &str) -> Result<String, String> {
+    let path = Path::new(path_str);
+    if path.exists() {
+        if path.is_dir() {
+            Ok("有效目录".to_string())
+        } else {
+            Err("存在但不是目录".to_string())
+        }
+    } else {
+        Err("目录不存在".to_string())
+    }
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -20,19 +34,17 @@ async fn main() -> anyhow::Result<()> {
     // 浏览按钮回调
     let app_weak = app.as_weak();
     app.on_browse_directory(move || {
-        let app_weak = app_weak.clone(); // 克隆弱引用
-        tokio::spawn(async move {
-            let folder = rfd::AsyncFileDialog::new().pick_folder().await;
-            if let Some(path) = folder {
-                let path_str = path.path().display().to_string();
-                slint::invoke_from_event_loop(move || {
-                    if let Some(app) = app_weak.upgrade() {
-                        app.set_directory(path_str.into());
-                    }
-                })
-                .unwrap();
-            }
-        });
+        let app_weak = app_weak.clone();
+        let folder = rfd::FileDialog::new().pick_folder();
+        if let Some(path) = folder {
+            let path_str = path.display().to_string();
+            slint::invoke_from_event_loop(move || {
+                if let Some(app) = app_weak.upgrade() {
+                    app.invoke_set_directory(path_str.into());
+                }
+            })
+            .unwrap();
+        }
     });
 
     // 启动服务器回调
@@ -61,10 +73,21 @@ async fn main() -> anyhow::Result<()> {
             let directory = directory.trim().to_string();
             if directory.is_empty() {
                 eprintln!("目录不能为空");
+                app.set_info("目录不能为空".into());
                 return;
             }
 
+            match validate_path(directory.as_str()) {
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("{}", e);
+                    app.set_info(e.into());
+                    return;
+                }
+            }
+
             app.set_server_running(true);
+            app.set_info("服务器运行中".into());
 
             tokio::spawn(async move {
                 // 停止当前正在运行的服务器
@@ -93,6 +116,7 @@ async fn main() -> anyhow::Result<()> {
         let app = app_weak.unwrap();
         let task_handle = task_handle.clone();
         app.set_server_running(false);
+        app.set_info("服务器已停止".into());
 
         tokio::spawn(async move {
             let mut guard = task_handle.lock().await;
