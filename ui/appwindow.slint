@@ -19,7 +19,11 @@ export component AppWindow inherits Window {
     callback browse-directory();
 
     in-out property <bool> server_running: false;
-    in-out property <string> directory: "";
+    in-out property <string> info: "";
+
+    public function set-directory(dir: string) {
+        directory-input.text = dir;
+    }
 
     VerticalBox {
         padding: 8px;
@@ -89,7 +93,6 @@ export component AppWindow inherits Window {
                 }
 
                 directory-input := LineEdit {
-                    text: root.directory;
                     placeholder-text: "服务器根目录（必填）";
                     enabled: !server_running;
                 }
@@ -119,14 +122,14 @@ export component AppWindow inherits Window {
                             username-input.text,
                             password-input.text,
                             port-input.text,
-                            root.directory);
+                            directory-input.text);
                     }
                 }
             }
         }
 
         Text {
-            text: root.server_running ? "服务器运行中..." : "服务器已停止";
+            text: root.info;
             horizontal-alignment: center;
         }
     }
