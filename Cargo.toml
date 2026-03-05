@@ -5,7 +5,7 @@ edition = "2024"
 build = "build.rs"
 
 [dependencies]
-slint = "1.15.1"
+slint = { version = "1.15.1", features = ["renderer-skia"] }
 tokio = { version = "1.49", features = ["full"] }
 anyhow = "1.0"
 libunftp = "0.23"
